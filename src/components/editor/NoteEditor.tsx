@@ -74,6 +74,7 @@ export const NoteEditor = memo(function NoteEditor({
   const [slashMenu, setSlashMenu] = useState<SlashMenuState | null>(null);
   const [linkPicker, setLinkPicker] = useState<LinkPickerState | null>(null);
   const [words, setWords] = useState(0);
+  const [selectedWords, setSelectedWords] = useState(0);
   const [missing, setMissing] = useState(false);
   const [properties, setProperties] = useState<Property[]>([]);
   const [propertyAddRequest, setPropertyAddRequest] = useState(0);
@@ -347,10 +348,24 @@ export const NoteEditor = memo(function NoteEditor({
         setSaveState("saving");
         debouncedPersist(markdown);
         setWords(countWords(markdown));
+        const sel = editor.state.selection;
+        if (sel.empty) {
+          setSelectedWords(0);
+        } else {
+          const selectedText = editor.state.doc.textBetween(sel.from, sel.to, " ");
+          setSelectedWords(countWords(selectedText));
+        }
         setContentVersion((value) => value + 1);
         updateSlashMenu(editor);
       },
       onSelectionUpdate({ editor }) {
+        const sel = editor.state.selection;
+        if (sel.empty) {
+          setSelectedWords(0);
+        } else {
+          const selectedText = editor.state.doc.textBetween(sel.from, sel.to, " ");
+          setSelectedWords(countWords(selectedText));
+        }
         updateSlashMenu(editor);
       },
     },
@@ -454,6 +469,7 @@ export const NoteEditor = memo(function NoteEditor({
         swapping.current = false;
         setLoadNonce((value) => value + 1);
         setWords(countWords(body));
+        setSelectedWords(0);
         // A freshly loaded note starts at the top.
         savedScroll.current = 0;
         if (scrollRef.current) scrollRef.current.scrollTop = 0;
@@ -774,6 +790,9 @@ export const NoteEditor = memo(function NoteEditor({
                 value={rawText}
                 onChange={applyRawTextChange}
                 selection={noteFind.sourceSelection}
+                onSelectionChange={(selectedText) => {
+                  setSelectedWords(countWords(selectedText));
+                }}
               />
             </Suspense>
           ) : (
@@ -825,7 +844,9 @@ export const NoteEditor = memo(function NoteEditor({
             (words === 0 || missing) && "opacity-0",
           )}
         >
-          {words} {words === 1 ? "word" : "words"}
+          {selectedWords > 0
+            ? `${selectedWords} of ${words} ${words === 1 ? "word" : "words"}`
+            : `${words} ${words === 1 ? "word" : "words"}`}
         </div>
       )}
       {active && publishSnapshot && (

@@ -60,16 +60,20 @@ export function MarkdownSourceEditor({
   value,
   onChange,
   selection,
+  onSelectionChange,
 }: {
   value: string;
   onChange: (value: string) => void;
   selection?: { from: number; to: number; nonce: number } | null;
+  onSelectionChange?: (selectedText: string) => void;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const syncingRef = useRef(false);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const onSelectionChangeRef = useRef(onSelectionChange);
+  onSelectionChangeRef.current = onSelectionChange;
 
   useEffect(() => {
     if (!hostRef.current) return;
@@ -90,6 +94,15 @@ export function MarkdownSourceEditor({
           EditorView.updateListener.of((update) => {
             if (update.docChanged && !syncingRef.current) {
               onChangeRef.current(update.state.doc.toString());
+            }
+            if (update.selectionSet || update.docChanged) {
+              if (onSelectionChangeRef.current) {
+                const sel = update.state.selection.main;
+                const text = sel.empty
+                  ? ""
+                  : update.state.sliceDoc(sel.from, sel.to);
+                onSelectionChangeRef.current(text);
+              }
             }
           }),
         ],
