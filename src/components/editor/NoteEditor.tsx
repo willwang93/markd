@@ -24,6 +24,7 @@ import {
 } from "@/lib/markdownPaste";
 import { flattenNotes } from "@/lib/tree";
 import { cx, debounce, noteTitle } from "@/lib/utils";
+import { countWords, extractBodySelection } from "@/lib/wordCount";
 import { useTabs } from "@/stores/tabs";
 import { useUi } from "@/stores/ui";
 import { useVault } from "@/stores/vault";
@@ -495,6 +496,7 @@ export const NoteEditor = memo(function NoteEditor({
   useEffect(() => {
     if (!editor || previousSource.current === markdownSource) return;
     previousSource.current = markdownSource;
+    setSelectedWords(0);
 
     if (markdownSource) {
       setRawText(joinFrontmatter(frontmatter.current, editor.getMarkdown()));
@@ -790,7 +792,8 @@ export const NoteEditor = memo(function NoteEditor({
                 value={rawText}
                 onChange={applyRawTextChange}
                 selection={noteFind.sourceSelection}
-                onSelectionChange={(selectedText) => {
+                onSelectionChange={({ from, to }) => {
+                  const selectedText = extractBodySelection(rawText, from, to);
                   setSelectedWords(countWords(selectedText));
                 }}
               />
@@ -862,8 +865,3 @@ export const NoteEditor = memo(function NoteEditor({
 });
 
 type EditorInstance = ReturnType<typeof useEditor>;
-
-function countWords(markdown: string) {
-  const text = markdown.trim();
-  return text ? text.split(/\s+/).filter(Boolean).length : 0;
-}

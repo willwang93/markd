@@ -65,7 +65,7 @@ export function MarkdownSourceEditor({
   value: string;
   onChange: (value: string) => void;
   selection?: { from: number; to: number; nonce: number } | null;
-  onSelectionChange?: (selectedText: string) => void;
+  onSelectionChange?: (range: { from: number; to: number; text: string }) => void;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -101,7 +101,11 @@ export function MarkdownSourceEditor({
                 const text = sel.empty
                   ? ""
                   : update.state.sliceDoc(sel.from, sel.to);
-                onSelectionChangeRef.current(text);
+                onSelectionChangeRef.current({
+                  from: sel.from,
+                  to: sel.to,
+                  text,
+                });
               }
             }
           }),
@@ -110,6 +114,14 @@ export function MarkdownSourceEditor({
     });
     viewRef.current = view;
     view.focus();
+
+    // Report initial selection on mount (empty selection) so stale selection counts from other modes are cleared.
+    const initialSel = view.state.selection.main;
+    onSelectionChangeRef.current?.({
+      from: initialSel.from,
+      to: initialSel.to,
+      text: initialSel.empty ? "" : view.state.sliceDoc(initialSel.from, initialSel.to),
+    });
 
     return () => {
       view.destroy();
