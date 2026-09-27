@@ -10,8 +10,8 @@ export function stripMarkdownSyntax(markdown: string): string {
     markdown
       // Code fence markers
       .replace(/^```[a-zA-Z0-9_-]*\s*$/gm, "")
-      // Headings
-      .replace(/^#{1,6}\s+/gm, "")
+      // Headings (including those nested inside blockquotes)
+      .replace(/^(?:(?:\s*>\s*)+)?#{1,6}\s+/gm, "")
       // Blockquotes (including nested e.g. >>, > >)
       .replace(/^(?:\s*>\s*)+/gm, "")
       // Unordered and task lists
@@ -38,11 +38,18 @@ export function stripMarkdownSyntax(markdown: string): string {
 }
 
 /**
- * Counts prose words in a markdown string, ignoring Markdown syntax formatting.
+ * Counts words in a plain or rendered text string by whitespace.
  */
-export function countWords(markdown: string): number {
-  const text = stripMarkdownSyntax(markdown).trim();
-  return text ? text.split(/\s+/).filter(Boolean).length : 0;
+export function countWords(text: string): number {
+  const trimmed = text.trim();
+  return trimmed ? trimmed.split(/\s+/).filter(Boolean).length : 0;
+}
+
+/**
+ * Counts prose words in a raw markdown string, ignoring Markdown syntax formatting.
+ */
+export function countMarkdownWords(markdown: string): number {
+  return countWords(stripMarkdownSyntax(markdown));
 }
 
 /**

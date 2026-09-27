@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  countMarkdownWords,
   countWords,
   extractBodySelection,
   stripMarkdownSyntax,
@@ -13,45 +14,54 @@ describe("word counting", () => {
     expect(countWords("   \n\t  ")).toBe(0);
   });
 
-  test("excludes markdown headings from word count", () => {
-    expect(countWords("# Hello world")).toBe(2);
-    expect(countWords("## Subtitle")).toBe(1);
-    expect(countWords("###### Deep heading with multiple words")).toBe(5);
+  test("counts rendered prose words preserving literal symbols", () => {
+    // In rich-text mode, `# hello` from inline code is rendered text
+    expect(countWords("# hello")).toBe(2);
+    expect(countWords("> quote")).toBe(2);
   });
 
-  test("excludes list markers and blockquotes", () => {
-    expect(countWords("- Item one\n- Item two")).toBe(4);
-    expect(countWords("* Star item")).toBe(2);
-    expect(countWords("- [ ] Unchecked todo\n- [x] Done todo")).toBe(4);
-    expect(countWords("1. First item\n2. Second item")).toBe(4);
-    expect(countWords("> Blockquote line")).toBe(2);
-    expect(countWords(">> Nested blockquote")).toBe(2);
-    expect(countWords("> > Nested blockquote with spaces")).toBe(4);
-    expect(countWords(">>> Triple nested blockquote")).toBe(3);
+  test("excludes markdown headings from raw markdown word count", () => {
+    expect(countMarkdownWords("# Hello world")).toBe(2);
+    expect(countMarkdownWords("## Subtitle")).toBe(1);
+    expect(countMarkdownWords("###### Deep heading with multiple words")).toBe(5);
+    expect(countMarkdownWords("> # Hello world")).toBe(2);
+    expect(countMarkdownWords(">> # Hello world")).toBe(2);
   });
 
-  test("excludes table syntax and delimiter rows from word count", () => {
+  test("excludes list markers and blockquotes in raw markdown", () => {
+    expect(countMarkdownWords("- Item one\n- Item two")).toBe(4);
+    expect(countMarkdownWords("* Star item")).toBe(2);
+    expect(countMarkdownWords("- [ ] Unchecked todo\n- [x] Done todo")).toBe(4);
+    expect(countMarkdownWords("1. First item\n2. Second item")).toBe(4);
+    expect(countMarkdownWords("> Blockquote line")).toBe(2);
+    expect(countMarkdownWords(">> Nested blockquote")).toBe(2);
+    expect(countMarkdownWords("> > Nested blockquote with spaces")).toBe(4);
+    expect(countMarkdownWords(">>> Triple nested blockquote")).toBe(3);
+  });
+
+  test("excludes table syntax and delimiter rows from raw markdown word count", () => {
     const tableWithBorders = [
       "| Name | Value |",
       "| --- | --- |",
       "| Alice | Ready |",
     ].join("\n");
-    expect(countWords(tableWithBorders)).toBe(4);
+    expect(countMarkdownWords(tableWithBorders)).toBe(4);
 
     const tableWithoutBorders = [
       "Name | Value",
       "--- | ---",
       "Alice | Ready",
     ].join("\n");
-    expect(countWords(tableWithoutBorders)).toBe(4);
+    expect(countMarkdownWords(tableWithoutBorders)).toBe(4);
   });
 
-  test("handles links, inline code, and formatting markers", () => {
-    expect(countWords("[Markd app](https://markd.app)")).toBe(2);
-    expect(countWords("![alt text](https://example.com/image.png)")).toBe(2);
-    expect(countWords("[[Daily Note|Today's Note]]")).toBe(2);
-    expect(countWords("[[SimpleNote]]")).toBe(1);
-    expect(countWords("**bold** *italic* ~~strike~~ `code`")).toBe(4);
+  test("handles links, inline code, and formatting markers in raw markdown", () => {
+    expect(countMarkdownWords("[Markd app](https://markd.app)")).toBe(2);
+    expect(countMarkdownWords("![alt text](https://example.com/image.png)")).toBe(2);
+    expect(countMarkdownWords("[[Daily Note|Today's Note]]")).toBe(2);
+    expect(countMarkdownWords("[[SimpleNote]]")).toBe(1);
+    expect(countMarkdownWords("**bold** *italic* ~~strike~~ `code`")).toBe(4);
+    expect(countMarkdownWords("`# hello`")).toBe(2);
   });
 });
 

@@ -24,7 +24,7 @@ import {
 } from "@/lib/markdownPaste";
 import { flattenNotes } from "@/lib/tree";
 import { cx, debounce, noteTitle } from "@/lib/utils";
-import { countWords, extractBodySelection } from "@/lib/wordCount";
+import { countWords, countMarkdownWords, extractBodySelection } from "@/lib/wordCount";
 import { useTabs } from "@/stores/tabs";
 import { useUi } from "@/stores/ui";
 import { useVault } from "@/stores/vault";
@@ -348,7 +348,13 @@ export const NoteEditor = memo(function NoteEditor({
         pending.current = markdown;
         setSaveState("saving");
         debouncedPersist(markdown);
-        setWords(countWords(markdown));
+        const fullText = editor.state.doc.textBetween(
+          0,
+          editor.state.doc.content.size,
+          " ",
+          " ",
+        );
+        setWords(countWords(fullText));
         const sel = editor.state.selection;
         if (sel.empty) {
           setSelectedWords(0);
@@ -383,7 +389,7 @@ export const NoteEditor = memo(function NoteEditor({
       pending.current = body;
       setSaveState("saving");
       debouncedPersist(body);
-      setWords(countWords(body));
+      setWords(countMarkdownWords(body));
       setContentVersion((value) => value + 1);
     },
     [debouncedPersist, setSaveState],
@@ -469,7 +475,11 @@ export const NoteEditor = memo(function NoteEditor({
         });
         swapping.current = false;
         setLoadNonce((value) => value + 1);
-        setWords(countWords(body));
+        setWords(
+          countWords(
+            editor.state.doc.textBetween(0, editor.state.doc.content.size, " ", " "),
+          ),
+        );
         setSelectedWords(0);
         // A freshly loaded note starts at the top.
         savedScroll.current = 0;
@@ -499,7 +509,9 @@ export const NoteEditor = memo(function NoteEditor({
     setSelectedWords(0);
 
     if (markdownSource) {
-      setRawText(joinFrontmatter(frontmatter.current, editor.getMarkdown()));
+      const fullMarkdown = joinFrontmatter(frontmatter.current, editor.getMarkdown());
+      setRawText(fullMarkdown);
+      setWords(countMarkdownWords(splitFrontmatter(fullMarkdown).body));
       return;
     }
 
@@ -512,6 +524,11 @@ export const NoteEditor = memo(function NoteEditor({
       contentType: "markdown",
     });
     swapping.current = false;
+    setWords(
+      countWords(
+        editor.state.doc.textBetween(0, editor.state.doc.content.size, " ", " "),
+      ),
+    );
   }, [editor, markdownSource, rawText]);
 
   // Flush any unsaved edit when the editor unmounts (tab closed / view gone).
@@ -544,7 +561,18 @@ export const NoteEditor = memo(function NoteEditor({
         });
         swapping.current = false;
         setLoadNonce((value) => value + 1);
-        setWords(countWords(body));
+        setWords(
+          markdownSource
+            ? countMarkdownWords(body)
+            : countWords(
+                editor.state.doc.textBetween(
+                  0,
+                  editor.state.doc.content.size,
+                  " ",
+                  " ",
+                ),
+              ),
+        );
       }
     } catch {
       // note may have been deleted externally; tree refresh handles it
@@ -794,7 +822,7 @@ export const NoteEditor = memo(function NoteEditor({
                 selection={noteFind.sourceSelection}
                 onSelectionChange={({ from, to, docText }) => {
                   const selectedText = extractBodySelection(docText, from, to);
-                  setSelectedWords(countWords(selectedText));
+                  setSelectedWords(countMarkdownWords(selectedText));
                 }}
               />
             </Suspense>
