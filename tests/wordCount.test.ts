@@ -25,6 +25,25 @@ describe("word counting", () => {
     expect(countWords("- [ ] Unchecked todo\n- [x] Done todo")).toBe(4);
     expect(countWords("1. First item\n2. Second item")).toBe(4);
     expect(countWords("> Blockquote line")).toBe(2);
+    expect(countWords(">> Nested blockquote")).toBe(2);
+    expect(countWords("> > Nested blockquote with spaces")).toBe(4);
+    expect(countWords(">>> Triple nested blockquote")).toBe(3);
+  });
+
+  test("excludes table syntax and delimiter rows from word count", () => {
+    const tableWithBorders = [
+      "| Name | Value |",
+      "| --- | --- |",
+      "| Alice | Ready |",
+    ].join("\n");
+    expect(countWords(tableWithBorders)).toBe(4);
+
+    const tableWithoutBorders = [
+      "Name | Value",
+      "--- | ---",
+      "Alice | Ready",
+    ].join("\n");
+    expect(countWords(tableWithoutBorders)).toBe(4);
   });
 
   test("handles links, inline code, and formatting markers", () => {
@@ -79,4 +98,17 @@ describe("extractBodySelection", () => {
     expect(extractBodySelection(noFm, from, to)).toBe("body");
     expect(countWords(extractBodySelection(noFm, from, to))).toBe(1);
   });
+
+  test("correctly extracts selection after document indentation (e.g. Tab in source mode)", () => {
+    // Initial document before indentation: "a b"
+    // After indenting with 2 spaces: "  a b"
+    // Range [2, 5] in the indented document corresponds to "a b"
+    const indentedDoc = "  a b";
+    const from = 2;
+    const to = 5;
+    const extracted = extractBodySelection(indentedDoc, from, to);
+    expect(extracted).toBe("a b");
+    expect(countWords(extracted)).toBe(2);
+  });
 });
+

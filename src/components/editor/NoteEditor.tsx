@@ -353,7 +353,7 @@ export const NoteEditor = memo(function NoteEditor({
         if (sel.empty) {
           setSelectedWords(0);
         } else {
-          const selectedText = editor.state.doc.textBetween(sel.from, sel.to, " ");
+          const selectedText = editor.state.doc.textBetween(sel.from, sel.to, " ", " ");
           setSelectedWords(countWords(selectedText));
         }
         setContentVersion((value) => value + 1);
@@ -364,7 +364,7 @@ export const NoteEditor = memo(function NoteEditor({
         if (sel.empty) {
           setSelectedWords(0);
         } else {
-          const selectedText = editor.state.doc.textBetween(sel.from, sel.to, " ");
+          const selectedText = editor.state.doc.textBetween(sel.from, sel.to, " ", " ");
           setSelectedWords(countWords(selectedText));
         }
         updateSlashMenu(editor);
@@ -792,8 +792,8 @@ export const NoteEditor = memo(function NoteEditor({
                 value={rawText}
                 onChange={applyRawTextChange}
                 selection={noteFind.sourceSelection}
-                onSelectionChange={({ from, to }) => {
-                  const selectedText = extractBodySelection(rawText, from, to);
+                onSelectionChange={({ from, to, docText }) => {
+                  const selectedText = extractBodySelection(docText, from, to);
                   setSelectedWords(countWords(selectedText));
                 }}
               />

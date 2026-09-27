@@ -65,7 +65,12 @@ export function MarkdownSourceEditor({
   value: string;
   onChange: (value: string) => void;
   selection?: { from: number; to: number; nonce: number } | null;
-  onSelectionChange?: (range: { from: number; to: number; text: string }) => void;
+  onSelectionChange?: (range: {
+    from: number;
+    to: number;
+    text: string;
+    docText: string;
+  }) => void;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -105,6 +110,7 @@ export function MarkdownSourceEditor({
                   from: sel.from,
                   to: sel.to,
                   text,
+                  docText: update.state.doc.toString(),
                 });
               }
             }
@@ -121,6 +127,7 @@ export function MarkdownSourceEditor({
       from: initialSel.from,
       to: initialSel.to,
       text: initialSel.empty ? "" : view.state.sliceDoc(initialSel.from, initialSel.to),
+      docText: view.state.doc.toString(),
     });
 
     return () => {

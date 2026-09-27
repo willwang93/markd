@@ -12,20 +12,24 @@ export function stripMarkdownSyntax(markdown: string): string {
       .replace(/^```[a-zA-Z0-9_-]*\s*$/gm, "")
       // Headings
       .replace(/^#{1,6}\s+/gm, "")
-      // Blockquotes
-      .replace(/^>\s+/gm, "")
+      // Blockquotes (including nested e.g. >>, > >)
+      .replace(/^(?:\s*>\s*)+/gm, "")
       // Unordered and task lists
       .replace(/^(\s*[-*+]\s*(\[[ xX]\]\s*)?)/gm, "")
       // Ordered lists
       .replace(/^(\s*\d+\.\s*)/gm, "")
-      // Horizontal rules
-      .replace(/^[-*_]{3,}\s*$/gm, "")
+      // Wiki links [[note|alias]] -> alias, [[note]] -> note (must precede table pipe replacement)
+      .replace(/\[\[(?:[^|\]]*\|)?([^\]]+)\]\]/g, "$1")
       // Images ![alt](url) -> alt
       .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
       // Markdown links [text](url) -> text
       .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-      // Wiki links [[note|alias]] -> alias, [[note]] -> note
-      .replace(/\[\[(?:[^|\]]*\|)?([^\]]+)\]\]/g, "$1")
+      // Table delimiter rows (e.g. | --- | :---: | ---: |)
+      .replace(/^[\s|:-]+$/gm, "")
+      // Table pipe delimiters -> replace with space so column boundaries separate words
+      .replace(/\|/g, " ")
+      // Horizontal rules
+      .replace(/^[-*_]{3,}\s*$/gm, "")
       // Inline code `code` -> code
       .replace(/`([^`]+)`/g, "$1")
       // Bold, italic, strikethrough: **text**, *text*, __text__, _text_, ~~text~~
