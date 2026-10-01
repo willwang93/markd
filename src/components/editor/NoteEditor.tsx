@@ -88,6 +88,8 @@ export const NoteEditor = memo(function NoteEditor({
   } | null>(null);
 
   const relRef = useRef(rel);
+  const markdownSourceRef = useRef(markdownSource);
+  markdownSourceRef.current = markdownSource;
   // Frontmatter of the loaded note, kept out of the editor and re-attached on
   // save so the file's metadata survives round-trips.
   const frontmatter = useRef("");
@@ -476,9 +478,16 @@ export const NoteEditor = memo(function NoteEditor({
         swapping.current = false;
         setLoadNonce((value) => value + 1);
         setWords(
-          countWords(
-            editor.state.doc.textBetween(0, editor.state.doc.content.size, " ", " "),
-          ),
+          markdownSourceRef.current
+            ? countMarkdownWords(body)
+            : countWords(
+                editor.state.doc.textBetween(
+                  0,
+                  editor.state.doc.content.size,
+                  " ",
+                  " ",
+                ),
+              ),
         );
         setSelectedWords(0);
         // A freshly loaded note starts at the top.
@@ -562,7 +571,7 @@ export const NoteEditor = memo(function NoteEditor({
         swapping.current = false;
         setLoadNonce((value) => value + 1);
         setWords(
-          markdownSource
+          markdownSourceRef.current
             ? countMarkdownWords(body)
             : countWords(
                 editor.state.doc.textBetween(
@@ -577,7 +586,7 @@ export const NoteEditor = memo(function NoteEditor({
     } catch {
       // note may have been deleted externally; tree refresh handles it
     }
-  }, [editor]);
+  }, [editor, markdownSource]);
 
   useEffect(() => {
     const onFocus = () => {

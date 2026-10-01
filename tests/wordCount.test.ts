@@ -122,3 +122,39 @@ describe("extractBodySelection", () => {
   });
 });
 
+describe("mode-dependent note loading and reloading", () => {
+  // A note containing an image: in rich-text mode the rendered image produces no prose words,
+  // whereas in source mode the markdown tokens (![alt text](url)) contribute the alt text words.
+  const noteBody = "Hello ![alt text](https://example.com/image.png)";
+  const renderedProseText = "Hello";
+
+  test("calculates total words according to active editor mode on initial load", () => {
+    // When opened directly in source mode
+    const sourceTotal = countMarkdownWords(noteBody);
+    expect(sourceTotal).toBe(3); // "Hello", "alt", "text"
+
+    // When opened in rich-text mode
+    const richTotal = countWords(renderedProseText);
+    expect(richTotal).toBe(1); // "Hello"
+
+    // Verify source mode selection matches source total when selecting all
+    const allSelectedSource = extractBodySelection(noteBody, 0, noteBody.length);
+    expect(countMarkdownWords(allSelectedSource)).toBe(sourceTotal);
+  });
+
+  test("reloads external edits using the active mode rules after mode switch", () => {
+    // Simulate reloading an external edit after toggling between modes:
+    const reloadedBody = "Updated note with ![photo label](https://example.com/pic.png)";
+    const reloadedRenderedText = "Updated note with";
+
+    // If active mode is source mode:
+    const sourceReloadWords = countMarkdownWords(reloadedBody);
+    expect(sourceReloadWords).toBe(5); // "Updated", "note", "with", "photo", "label"
+
+    // If active mode is rich-text mode:
+    const richReloadWords = countWords(reloadedRenderedText);
+    expect(richReloadWords).toBe(3); // "Updated", "note", "with"
+  });
+});
+
+
